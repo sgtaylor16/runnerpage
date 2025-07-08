@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Larkin Taylor Runner Page</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+</head>
+<body>
+    <div class="container">
+        <h1>Larkin Taylor's Runner Page</h1>
+    </div>
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <img src="../assets/LarkinStart.jpg" width="400" height="auto">
+            </div>
+            <div class="col">
+                 <img src="../assets/NXR2024.jpg" width="400" height="auto"> 
+            </div>
+            <div class="col">
+                <img src="../assets/Larkin.jpg" width="400" height="auto">
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <h1>Bio</h1>
+        <ul>
+            <li>Carmel High School Class '27</li>
+            <li>GPA:3.8 </li>
+            <li>Height:5'5"</li>
+            <li><a href ="https://in.milesplit.com/athletes/13663335-larkin-taylor">Mile Split Page</a></li>
+            <li>Member, Team State Champion Cross Country 2024 - <em>First Team Finisher</em></li>
+            <li>Member, Team State Champion Track <em>4th Place 800 (2:12), 2nd Place 4x800 (2:09)</em></li>
+
+        </ul>
+    </div>
+    <div class="container">
+        <h1>Cross Country</h1>
+        <div id="cctimes"></div>
+    </div>
+    <div class="container">
+        <h1>800 Meter</h1>
+        <div id="times800"></div>
+    </div>
+    <div class="container">
+        <h1>Race Videos</h1>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
+<script type="module"> //Module for Cross Country Times
+    import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+    import { convertToSeconds } from "../js/jstools.js";
+
+    let width = 700;
+    let height = 300;
+    let margin = { top: 20, right: 20, bottom: 20, left: 40 };
+
+    let timeScaleCC = d3.scaleTime()
+        .domain([new Date(2024, 7, 1), new Date(2024, 12, 15)])
+        .range([margin.left, width - margin.right]);
+
+    let timeScaleTrack = d3.scaleTime()
+        .domain([new Date(2024, 1, 1), new Date(2024, 7, 1)])
+        .range([margin.left, width - margin.right]);
+
+    let raceScale = d3.scaleLinear()
+        .domain([17*60, 20*60])
+        .range([height - margin.bottom, margin.top]);
+
+    let lap2Scale = d3.scaleLinear()
+        .domain([2.0 * 60, 2.4 * 60])
+        .range([height - margin.bottom, margin.top]);
+
+    let yearColors = d3.scaleOrdinal()
+        .domain(['freshman','sophomore','junior','senior'])
+        .range(['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']);
+
+    let timeFormat = d3.timeFormat("%b %d");
+
+    let xAxisCC = d3.axisBottom(timeScaleCC)
+        .tickFormat(timeFormat);
+    xAxisCC.ticks(d3.timeMonth.every(1));
+
+    let xAxisTrack = d3.axisBottom(timeScaleTrack)
+        .tickFormat(timeFormat);
+    xAxisTrack.ticks(d3.timeMonth.every(1));
+
+    let yAxis800 = d3.axisLeft(lap2Scale)
+        .tickFormat(d => {
+            let minutes = Math.floor(d / 60);
+            let seconds = d % 60;
+            return `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+        })
+        .ticks(4);
+
+    let yAxis = d3.axisLeft(raceScale)
+        .tickFormat(d =>{
+            let minutes = Math.floor(d / 60);
+            let seconds = d % 60;
+            return `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+        })
+        .ticks(4)
+
+    let svg = d3.select("#cctimes")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+    let svg800 = d3.select("#times800")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+    d3.json("../assets/raceData.json").then(data => {
+        // Process the data and create the visualization
+
+        data.forEach(d => {
+            d.date = new Date(d.date);
+            d.date.setYear(2024); // Set the year to 2024
+        });
+
+        // Section for Cross Country Times
+        const data5k = data.filter(d => d.distance == "5K");
+
+        svg.selectAll("circle")
+            .data(data5k)
+            .join("circle")
+            .attr("cx", d => timeScaleCC(d.date))
+            .attr("cy", d => raceScale(convertToSeconds(d.time)))
+            .attr("r", 5)
+            .attr("fill", d => yearColors(d.year));
+
+        svg.append("g")
+            .attr("class", "x-axis")
+            .attr("transform", `translate(0, ${height - margin.bottom})`)
+            .call(xAxisCC);
+
+        svg.append("g")
+            .attr("class", "y-axis")
+            .attr("transform", `translate(${margin.left}, 0)`)
+            .call(yAxis);
+
+        // Section for 800 Meter Times
+        const data800 = data.filter(d => d.distance == "800");
+        console.log(data800);
+
+        svg800.selectAll("circle")
+            .data(data800)
+            .join("circle")
+            .attr("cx", d => timeScaleTrack(d.date))
+            .attr("cy", d => lap2Scale(convertToSeconds(d.time)))
+            .attr("r", 5)
+            .attr("fill", d => yearColors(d.year));
+
+        svg800.append("g")
+            .attr("class", "x-axis")
+            .attr("transform", `translate(0, ${height - margin.bottom})`)
+            .call(xAxisTrack);
+
+        svg800.append("g")
+            .attr("class", "y-axis")
+            .attr("transform", `translate(${margin.left}, 0)`)
+            .call(yAxis800);
+
+    });
+</script>
+</body>
+</html>
